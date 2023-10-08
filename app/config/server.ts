@@ -18,6 +18,8 @@ declare global {
 }
 
 const ACCESS_CODES = (function getAccessCodes(): Set<string> {
+  //process.env.CODE 是逗号分隔的字符串
+  // 从环境变量中获取访问密码
   const code = process.env.CODE;
 
   try {

@@ -3,6 +3,8 @@ import { getServerSideConfig } from "../config/server";
 import md5 from "spark-md5";
 import { ACCESS_CODE_PREFIX } from "../constant";
 
+import { serverHooks } from "next/dist/server/app-render/entry-base";
+
 function getIP(req: NextRequest) {
   let ip = req.ip ?? req.headers.get("x-real-ip");
   const forwardedFor = req.headers.get("x-forwarded-for");
@@ -24,7 +26,7 @@ function parseApiKey(bearToken: string) {
   };
 }
 
-export function auth(req: NextRequest) {
+export async function auth(req: NextRequest) {
   const authToken = req.headers.get("Authorization") ?? "";
 
   // check if it is openai api key or user token
@@ -38,8 +40,36 @@ export function auth(req: NextRequest) {
   console.log("[Auth] hashed access code:", hashedCode);
   console.log("[User IP] ", getIP(req));
   console.log("[Time] ", new Date().toLocaleString());
+  console.log("[Auth]======================= ");
 
-  if (serverConfig.needCode && !serverConfig.codes.has(hashedCode) && !token) {
+  // if access code is not empty, check if it is valid
+  if (accessCode) {
+    const data = await getAccessCodeValid(accessCode);
+
+    console.log("[Auth]", data);
+    // if data is null, return network error
+    if (!data) {
+      console.log("[Auth] network error");
+      return {
+        error: true,
+        msg: "network error",
+      };
+    }
+
+    // if data.data.status > 400, return error
+    if (data.data.status > 400) {
+      console.log("[Auth] error", data.message);
+      return {
+        error: true,
+        msg: data.message,
+      };
+    } else {
+      console.log("[Auth] success");
+    }
+  }
+  // edit by amos[old]: serverConfig.needCode && !serverConfig.codes.has(hashedCode) && !token
+  // remove: !serverConfig.codes.has(hashedCode)
+  if (serverConfig.needCode && !token) {
     return {
       error: true,
       msg: !accessCode ? "empty access code" : "wrong access code",
@@ -62,4 +92,23 @@ export function auth(req: NextRequest) {
   return {
     error: false,
   };
+}
+
+export async function getAccessCodeValid(accessCode: string) {
+  try {
+    const username = "ck_19465cb4cb67a9649058b60d7e78168059bcd818";
+    const password = "cs_f20060b646e2ce1dc395d60290bb2a874cd6993b";
+    const authCode = Buffer.from(`${username}:${password}`).toString("base64");
+    const headers = {
+      Authorization: `Basic ${authCode}`,
+    };
+    const url = `https://ai4all.me/wp-json/lmfwc/v2/licenses/activate/${accessCode}`;
+    const res = await fetch(url, { headers });
+    const data = await res.json();
+    return data; // 返回实际的验证结果
+  } catch (error) {
+    // 处理错误情况
+    console.error("Error:", error);
+    return null;
+  }
 }

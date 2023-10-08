@@ -69,7 +69,7 @@ export async function auth(req: NextRequest) {
   }
   // edit by amos[old]: serverConfig.needCode && !serverConfig.codes.has(hashedCode) && !token
   // remove: !serverConfig.codes.has(hashedCode)
-  if (serverConfig.needCode && !token) {
+  if (serverConfig.needCode && !token && !accessCode) {
     return {
       error: true,
       msg: !accessCode ? "empty access code" : "wrong access code",

@@ -91,7 +91,7 @@ export async function auth(req: NextRequest) {
   } else {
     return {
       error: true,
-      msg: "empty access code",
+      msg: "[Auth] empty access code!!!",
     };
   }
 

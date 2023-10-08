@@ -145,7 +145,7 @@ export function SideBar(props: { className?: string }) {
     >
       <div className={styles["sidebar-header"]} data-tauri-drag-region>
         <div className={styles["sidebar-title"]} data-tauri-drag-region>
-          AI4ALL NEXT
+          AI4ALL.ME
         </div>
         <div className={styles["sidebar-sub-title"]}>
           AI assistant for everyone
@@ -169,13 +169,13 @@ export function SideBar(props: { className?: string }) {
           }}
           shadow
         />
-        <IconButton
+        {/* <IconButton
           icon={<PluginIcon />}
           text={shouldNarrow ? undefined : Locale.Plugin.Name}
           className={styles["sidebar-bar-button"]}
           onClick={() => showToast(Locale.WIP)}
           shadow
-        />
+        /> */}
       </div>
 
       <div

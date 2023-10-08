@@ -163,7 +163,7 @@ const ko: PartialLocaleType = {
   },
   Store: {
     DefaultTopic: "새 대화",
-    BotHello: "안녕하세요! 오늘 도움이 필요하신가요?",
+    BotHello: "[ai4all.me]안녕하세요! 오늘 도움이 필요하신가요?",
     Error: "문제가 발생했습니다. 나중에 다시 시도해주세요.",
     Prompt: {
       History: (content: string) =>

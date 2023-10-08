@@ -20,7 +20,8 @@ const jp: PartialLocaleType = {
       Stop: "停止",
       Retry: "リトライ",
       Pin: "ピン",
-      PinToastContent: "コンテキストプロンプトに1つのメッセージをピン留めしました",
+      PinToastContent:
+        "コンテキストプロンプトに1つのメッセージをピン留めしました",
       PinToastAction: "表示",
       Delete: "削除",
       Edit: "編集",
@@ -186,7 +187,7 @@ const jp: PartialLocaleType = {
   },
   Store: {
     DefaultTopic: "新しいチャット",
-    BotHello: "何かお手伝いできることはありますか",
+    BotHello: "[ai4all.me] 何かお手伝いできることはありますか",
     Error: "エラーが発生しました。しばらくしてからやり直してください。",
     Prompt: {
       History: (content: string) =>

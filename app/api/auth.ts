@@ -94,6 +94,14 @@ export async function auth(req: NextRequest) {
   };
 }
 
+// 函数 根据validFor更新expiresAt
+export function updateExpiresAt(validFor: number) {
+  // validFor 单位为day
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + validFor);
+  return expiresAt;
+}
+
 export async function getAccessCodeValid(accessCode: string) {
   try {
     const username = "ck_19465cb4cb67a9649058b60d7e78168059bcd818";
@@ -102,9 +110,37 @@ export async function getAccessCodeValid(accessCode: string) {
     const headers = {
       Authorization: `Basic ${authCode}`,
     };
-    const url = `https://ai4all.me/wp-json/lmfwc/v2/licenses/activate/${accessCode}`;
-    const res = await fetch(url, { headers });
+    const url = `https://ai4all.me/wp-json/lmfwc/v2/licenses`;
+    const activate_url = `${url}/activate/${accessCode}`;
+    const update_url = `${url}/${accessCode}`;
+    const res = await fetch(activate_url, { headers });
     const data = await res.json();
+
+    if (data.data.status < 400) {
+      if (
+        data.data.validFor &&
+        data.data.validFor > 0 &&
+        !data.data.expiresAt
+      ) {
+        const _expiresAt = updateExpiresAt(data.data.validFor);
+        const year = _expiresAt.getFullYear();
+        const month = String(_expiresAt.getMonth() + 1).padStart(2, "0");
+        const day = String(_expiresAt.getDate()).padStart(2, "0");
+        const formatted_date = `${year}-${month}-${day}`;
+        const mydata = { expires_at: formatted_date };
+        console.log("########", mydata);
+
+        const res = await fetch(update_url, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify(mydata),
+        }).catch((err) => {
+          throw new Error(`网络错误 | Network error: ${err.message}`);
+        });
+        const data2 = await res.json();
+      }
+    }
+
     return data; // 返回实际的验证结果
   } catch (error) {
     // 处理错误情况

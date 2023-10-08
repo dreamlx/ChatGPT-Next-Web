@@ -42,6 +42,28 @@ export async function auth(req: NextRequest) {
   console.log("[Time] ", new Date().toLocaleString());
   console.log("[Auth]======================= ");
 
+  // edit by amos[old]: serverConfig.needCode && !serverConfig.codes.has(hashedCode) && !token
+  // remove: !serverConfig.codes.has(hashedCode)
+  if (serverConfig.needCode && !token && !accessCode) {
+    return {
+      error: true,
+      msg: !accessCode ? "empty access code" : "wrong access code",
+    };
+  }
+
+  // if user does not provide an api key, inject system api key
+  if (!token) {
+    const apiKey = serverConfig.apiKey;
+    if (apiKey) {
+      console.log("[Auth] use system api key");
+      req.headers.set("Authorization", `Bearer ${apiKey}`);
+    } else {
+      console.log("[Auth] admin did not provide an api key");
+    }
+  } else {
+    console.log("[Auth] use user api key");
+  }
+
   // if access code is not empty, check if it is valid
   if (accessCode) {
     const data = await getAccessCodeValid(accessCode);
@@ -66,27 +88,11 @@ export async function auth(req: NextRequest) {
     } else {
       console.log("[Auth] success");
     }
-  }
-  // edit by amos[old]: serverConfig.needCode && !serverConfig.codes.has(hashedCode) && !token
-  // remove: !serverConfig.codes.has(hashedCode)
-  if (serverConfig.needCode && !token && !accessCode) {
+  } else {
     return {
       error: true,
-      msg: !accessCode ? "empty access code" : "wrong access code",
+      msg: "empty access code",
     };
-  }
-
-  // if user does not provide an api key, inject system api key
-  if (!token) {
-    const apiKey = serverConfig.apiKey;
-    if (apiKey) {
-      console.log("[Auth] use system api key");
-      req.headers.set("Authorization", `Bearer ${apiKey}`);
-    } else {
-      console.log("[Auth] admin did not provide an api key");
-    }
-  } else {
-    console.log("[Auth] use user api key");
   }
 
   return {

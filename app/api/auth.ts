@@ -3,6 +3,14 @@ import { getServerSideConfig } from "../config/server";
 import md5 from "spark-md5";
 import { ACCESS_CODE_PREFIX, ModelProvider } from "../constant";
 
+// 函数 根据validFor更新expiresAt
+export function updateExpiresAt(validFor: number) {
+  // validFor 单位为day
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + validFor);
+  return expiresAt;
+}
+
 function getIP(req: NextRequest) {
   let ip = req.ip ?? req.headers.get("x-real-ip");
   const forwardedFor = req.headers.get("x-forwarded-for");
@@ -40,10 +48,30 @@ export function auth(req: NextRequest, modelProvider: ModelProvider) {
   console.log("[Time] ", new Date().toLocaleString());
 
   if (serverConfig.needCode && !serverConfig.codes.has(hashedCode) && !apiKey) {
-    return {
-      error: true,
-      msg: !accessCode ? "empty access code" : "wrong access code",
-    };
+    if (accessCode) {
+      getAccessCodeValid(accessCode)
+        .then((data) => {
+          // 处理 data 的代码
+          console.log("data", data);
+          if (data.data.status < 400) {
+            return {
+              error: false,
+            };
+          }
+        })
+        .catch((error) => {
+          // 处理 error 的代码
+          return {
+            error: true,
+            msg: "access code is invalid",
+          };
+        });
+    } else {
+      return {
+        error: true,
+        msg: !accessCode ? "empty access code" : "wrong access code",
+      };
+    }
   }
 
   if (serverConfig.hideUserApiKey && !!apiKey) {
@@ -114,4 +142,50 @@ export function auth(req: NextRequest, modelProvider: ModelProvider) {
   return {
     error: false,
   };
+}
+
+export async function getAccessCodeValid(accessCode: string) {
+  try {
+    const username = "ck_19465cb4cb67a9649058b60d7e78168059bcd818";
+    const password = "cs_f20060b646e2ce1dc395d60290bb2a874cd6993b";
+    const authCode = Buffer.from(`${username}:${password}`).toString("base64");
+    const headers = {
+      Authorization: `Basic ${authCode}`,
+    };
+    const url = `https://ai4all.me/wp-json/lmfwc/v2/licenses`;
+    const activate_url = `${url}/activate/${accessCode}`;
+    const update_url = `${url}/${accessCode}`;
+    const res = await fetch(activate_url, { headers });
+    const data = await res.json();
+
+    if (data.data.status < 400) {
+      if (
+        data.data.validFor &&
+        data.data.validFor > 0 &&
+        !data.data.expiresAt
+      ) {
+        const _expiresAt = updateExpiresAt(data.data.validFor);
+        const year = _expiresAt.getFullYear();
+        const month = String(_expiresAt.getMonth() + 1).padStart(2, "0");
+        const day = String(_expiresAt.getDate()).padStart(2, "0");
+        const formatted_date = `${year}-${month}-${day}`;
+        const mydata = { expires_at: formatted_date };
+        console.log("########", mydata);
+
+        const res = await fetch(update_url, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify(mydata),
+        }).catch((err) => {
+          throw new Error(`网络错误 | Network error: ${err.message}`);
+        });
+        const data2 = await res.json();
+      }
+    }
+    return data; // 返回实际的验证结果
+  } catch (error) {
+    // 处理错误情况
+    console.error("Error:", error);
+    return null;
+  }
 }
